@@ -114,7 +114,7 @@ def search():
         if 0 <= idx < len(metadata):
             fname, chunk_id, text = metadata[idx]
             snippets.append(f"From {fname}, chunk {chunk_id}:\n{text.strip()}")
-
+    # something
     if not snippets:
         return jsonify({"answer": "No relevant chunks found."})
 
