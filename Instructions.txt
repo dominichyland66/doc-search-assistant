@@ -8,7 +8,9 @@ docker run -it -p 5050:5000 -v "/Users/dominichyland/Documents/RAG LLM Demo":/ap
 
 python app.py 
 
-quick change
+git add .
+git commit -m "test commit" 
+git push
 
 
 
