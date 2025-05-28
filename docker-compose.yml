@@ -1,0 +1,12 @@
+services:
+  python:
+    name: python
+    build: ./Dockerfile
+    env:
+      - pythondata:/data
+
+  nginx:
+    container: nginx:latest
+
+volumes:
+  pythondata:

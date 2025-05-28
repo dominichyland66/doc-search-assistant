@@ -1,0 +1,176 @@
+/* -------------------- Base Styles -------------------- */
+
+/* make every element size itself including its padding & border */
+html {
+    box-sizing: border-box;
+  }
+  *, *::before, *::after {
+    box-sizing: inherit;
+  }
+  
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f5f5f5;
+    padding: 40px;
+    max-width: 800px;
+    margin: auto;
+}
+h1, h2 {
+    color: #333;
+    text-align: center;
+}
+
+/* -------------------- Main Panel for Input + Answer -------------------- */
+.main-panel {
+    max-width: 600px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+/* -------------------- Layout Helpers -------------------- */
+.controls {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.search-form {
+    display: flex;
+    width: 100%;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+/* -------------------- Form Elements -------------------- */
+#queryInput,
+.search-form input[type="text"] {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 10px;
+    font-size: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    /* Remove width property if present! */
+}
+
+/* -------------------- Buttons -------------------- */
+.button {
+    flex: 0 0 auto;
+    background-color: #007BFF;
+    color: #fff;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin: 0 5px 0 0;
+}
+.button:last-child {
+    margin-right: 0;
+}
+
+.button:hover {
+    background-color: #0056b3;
+}
+
+/* -------------------- Answer Box -------------------- */
+#answerBox {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    white-space: pre-wrap;
+    min-height: 50px;
+    width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+}
+
+/* -------------------- Spinner -------------------- */
+#spinner {
+    display: none;
+    text-align: center;
+    margin: 20px 0;
+}
+
+.loader {
+    border: 8px solid #f3f3f3;
+    border-top: 8px solid #007BFF;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto;
+}
+
+@keyframes spin {
+    0%   { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* -------------------- PDF Sidebar (Slide-in) -------------------- */
+#fileSidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 300px;
+    height: 100%;
+    background-color: #f1f1f1;
+    border-right: 1px solid #ddd;
+    padding: 20px;
+    box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+    overflow-y: auto;
+    z-index: 1000;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+}
+#fileSidebar.show {
+    transform: translateX(0);
+}
+
+#fileSidebarContent {
+    position: relative;
+}
+
+/* -------------------- Close Button -------------------- */
+#closeSidebar {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: transparent;
+    border: none;
+    font-size: 1.4em;
+    font-weight: bold;
+    color: #000;
+    cursor: pointer;
+}
+
+/* -------------------- PDF List -------------------- */
+#sidebarFileList {
+    list-style: none;
+    padding-left: 0;
+    margin-top: 40px; /* keep clear of the close button */
+}
+
+#sidebarFileList li {
+    margin-bottom: 8px;
+    font-size: 0.95em;
+}
+
+#sidebarFileList li a {
+    text-decoration: none;
+    color: #007BFF;
+}
+#sidebarFileList li a:hover {
+    text-decoration: underline;
+}
+
+/* -------------------- Optional Extras -------------------- */
+.snippet {
+    background: #f9f9f9;
+    border-left: 4px solid #007BFF;
+    padding: 10px;
+    margin-bottom: 10px;
+    font-family: monospace;
+    white-space: pre-wrap;
+}

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Document Search Assistant</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+
+    <h1>Document Search Assistant</h1>
+
+    <div class="controls">
+        <button class="button" id="reindexButton">🔄 Reindex Documents</button>
+        <button class="button" id="listFilesButton">📄 Show PDF Files</button>
+    </div>
+
+    <div class="main-panel">
+        <form class="search-form" id="searchForm">
+            <input type="text" id="queryInput" placeholder="Enter your question…" required />
+            <button class="button" type="submit">Ask</button>
+        </form>
+        <div id="answerBox"></div>
+        <div id="spinner"><div class="loader"></div></div>
+    </div>
+
+    <!-- PDF Sidebar (slide-in) -->
+    <div id="fileSidebar">
+        <div id="fileSidebarContent">
+            <button id="closeSidebar">&times;</button>
+            <h2>Available PDFs</h2>
+            <ul id="sidebarFileList"></ul>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('searchForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const query = document.getElementById('queryInput').value;
+            const answerBox = document.getElementById('answerBox');
+            const spinner = document.getElementById('spinner');
+
+            spinner.style.display = 'block';
+            answerBox.textContent = '';
+
+            try {
+                const res = await fetch('/search', {
+                    method: 'POST',
+                    body: new URLSearchParams({ query })
+                });
+                const data = await res.json();
+
+                answerBox.textContent = data.answer || '⚠ No answer found.';
+            } catch (err) {
+                answerBox.textContent = '❌ Error during search.';
+            } finally {
+                spinner.style.display = 'none';
+            }
+        });
+
+        document.getElementById('reindexButton').addEventListener('click', async () => {
+            if (!confirm('Rebuilding the index may take some time. Continue?')) return;
+
+            try {
+                const res = await fetch('/reindex', { method: 'POST' });
+                const data = await res.json();
+                alert(data.message || 'Reindexing completed.');
+            } catch (err) {
+                alert('❌ Error during reindexing.');
+            }
+        });
+
+        document.getElementById('listFilesButton').addEventListener('click', async () => {
+            const sidebar = document.getElementById('fileSidebar');
+            const fileList = document.getElementById('sidebarFileList');
+
+            try {
+                const res = await fetch('/list_files');
+                const data = await res.json();
+
+                if (data.files && data.files.length > 0) {
+                    fileList.innerHTML = '';
+                    data.files.forEach(file => {
+                        const li = document.createElement('li');
+                        const link = document.createElement('a');
+                        link.textContent = file;
+                        link.href = `/Source_Documents/${encodeURIComponent(file)}`;
+                        link.target = '_blank';
+                        li.appendChild(link);
+                        fileList.appendChild(li);
+                    });
+                } else {
+                    fileList.innerHTML = '<li>No PDF files found.</li>';
+                }
+                sidebar.classList.add('show');  // trigger slide-in
+            } catch (err) {
+                alert('❌ Error fetching file list.');
+            }
+        });
+
+        document.getElementById('closeSidebar').addEventListener('click', () => {
+            document.getElementById('fileSidebar').classList.remove('show');  // trigger slide-out
+        });
+    </script>
+
+</body>
+</html>

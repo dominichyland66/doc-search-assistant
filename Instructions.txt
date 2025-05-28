@@ -1,0 +1,12 @@
+This sets you up with Python, FAISS, and PyMuPDF inside a lightweight container.
+
+Once you’ve got that, you’d open your terminal in that folder and run:
+
+docker build -t rag-llm-demo .
+
+docker run -it -p 5050:5000 -v "/Users/dominichyland/Documents/RAG LLM Demo":/app rag-llm-demo
+
+python app.py 
+
+
+
