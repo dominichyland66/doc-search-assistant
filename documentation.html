@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>LDA-Driven Semantic Graph Viewer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 40px auto;
+            line-height: 1.6;
+            background-color: #f9f9f9;
+            padding: 20px;
+            color: #333;
+        }
+        h1, h2, h3 {
+            color: #222;
+        }
+        code {
+            background-color: #eee;
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-size: 0.95em;
+        }
+        pre {
+            background-color: #eee;
+            padding: 10px;
+            overflow-x: auto;
+            border-radius: 4px;
+        }
+        section {
+            margin-bottom: 30px;
+        }
+        ul {
+            margin-left: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>LDA-Driven Semantic Graph Viewer</h1>
+
+    <section>
+        <h2>Overview</h2>
+        <p>This tool lets you visually explore the themes and semantic relationships in a collection of PDF documents. It:</p>
+        <ul>
+            <li><strong>Extracts</strong> fixed-length text chunks from each PDF.</li>
+            <li><strong>Embeds</strong> each chunk using a sentence-transformer into a high-dimensional vector.</li>
+            <li><strong>Clusters</strong> them into hand-tuned “topics” (via LDA keywords or seeds).</li>
+            <li><strong>Indexes</strong> and links each chunk to its <em>k</em> nearest neighbors (by cosine similarity).</li>
+            <li><strong>Renders</strong> a D3 force-directed graph where:
+                <ul>
+                    <li><strong>Nodes</strong> = chunks, colored by topic</li>
+                    <li><strong>Edges</strong> = similarity links</li>
+                    <li><strong>Tooltips</strong> & labels show human-readable topic descriptions</li>
+                    <li><strong>Slider</strong> lets you expand/contract the layout</li>
+                    <li><strong>Click</strong> lets you drill into full or excerpted passages</li>
+                </ul>
+            </li>
+        </ul>
+    </section>
+
+    <section>
+        <h2>Architecture</h2>
+        <pre>PDFs ──build_index.py──▶ FAISS index + metadata.pkl
+      └─build_graph_with_lda.py─▶ graph.json + lda_topics.json
+
+Flask app.py ─ serves ─ graph.html ─ D3 & JSON ─▶ interactive visualization</pre>
+
+        <ul>
+            <li><strong>build_index.py</strong>
+                <ul>
+                    <li>Scans <code>Source_Documents/*.pdf</code></li>
+                    <li>Extracts 500-char chunks</li>
+                    <li>Embeds via <code>sentence-transformers/all-MiniLM-L6-v2</code></li>
+                    <li>Builds a FAISS L2 index + pickles metadata</li>
+                </ul>
+            </li>
+            <li><strong>build_graph_with_lda.py</strong>
+                <ul>
+                    <li>Loads the FAISS index & metadata</li>
+                    <li>Either uses your <code>static/topics.json</code> (keywords + descriptions) or trains LDA to extract topics</li>
+                    <li>Assigns each chunk a dominant topic</li>
+                    <li>Finds <em>k</em> nearest neighbors for each vector</li>
+                    <li>Emits <code>static/lda_topics.json</code> (id / keywords / description)</li>
+                    <li>Emits <code>static/graph.json</code> (nodes + links)</li>
+                </ul>
+            </li>
+            <li><strong>app.py</strong> (Flask)
+                <ul>
+                    <li>Serves:
+                        <ul>
+                            <li><code>/</code> → <code>index.html</code> search UI</li>
+                            <li><code>/graph</code> → <code>static/graph.html</code> graph viewer</li>
+                            <li><code>/graph_data</code> → JSON graph</li>
+                            <li><code>/lda_topics</code> → JSON topic metadata</li>
+                            <li><code>/chunk/&lt;id&gt;</code> → single-chunk text</li>
+                            <li><code>/topic_chunks/&lt;topic_id&gt;</code> → all excerpts for one topic</li>
+                            <li><code>/reindex</code> & <code>/search</code> for QA</li>
+                        </ul>
+                    </li>
+                </ul>
+            </li>
+            <li><strong>static/graph.html</strong>
+                <ul>
+                    <li>Loads <code>/static/graph.json</code> & <code>/static/lda_topics.json</code> via D3</li>
+                    <li>Creates SVG force simulation</li>
+                    <li>Renders:
+                        <ul>
+                            <li>Edges with thickness proportional to similarity; bright green if ≥ threshold</li>
+                            <li>Nodes colored by topic</li>
+                            <li>Permanent labels (short description) and tooltips (full description)</li>
+                            <li>Slider to tweak link distance</li>
+                            <li>Drill-down pane on node click to fetch chunk(s)</li>
+                        </ul>
+                    </li>
+                </ul>
+            </li>
+        </ul>
+    </section>
+
+    <section>
+        <h2>Quick Start</h2>
+        <ol>
+            <li><strong>Place PDFs</strong> in <code>Source_Documents/</code>.</li>
+            <li><strong>Build index</strong>:
+                <pre>python build_index.py</pre>
+            </li>
+            <li><strong>Author topics</strong> (optional) in <code>static/topics.json</code>:
+                <pre>[
+    { "id": 0, "keywords": […], "description": "…" },
+    …
+]</pre>
+            </li>
+            <li><strong>Build graph</strong>:
+                <pre>python build_graph_with_lda.py --topics-json static/topics.json</pre>
+            </li>
+            <li><strong>Run the server</strong>:
+                <pre>python app.py</pre>
+            </li>
+            <li><strong>Browse</strong>:
+                <ul>
+                    <li>Search UI: <code>http://localhost:5000/</code></li>
+                    <li>Graph: <code>http://localhost:5000/graph</code></li>
+                </ul>
+            </li>
+        </ol>
+    </section>
+
+    <section>
+        <h2>Customization & Extensions</h2>
+        <ul>
+            <li><strong>Topics</strong>: Tweak <code>--num-topics</code> or edit <code>static/topics.json</code> to control themes.</li>
+            <li><strong>Chunk size</strong>: Adjust in <code>build_index.py</code> (default 500 chars).</li>
+            <li><strong>Nearest neighbors</strong>: Change <code>--k-neighbors</code> (default 5).</li>
+            <li><strong>Styling</strong>: Update <code>static/graph.html</code> CSS—for fonts, colors, labels.</li>
+            <li><strong>Additional metadata</strong>: Extend node payload with page numbers or section titles.</li>
+            <li><strong>Filtering UI</strong>: Add controls to hide/show topics or threshold edges by value.</li>
+        </ul>
+    </section>
+
+</body>
+</html>
