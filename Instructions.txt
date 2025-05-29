@@ -8,9 +8,17 @@ docker run -it -p 5050:5000 -v "/Users/dominichyland/Documents/RAG LLM Demo":/ap
 
 python app.py 
 
+To STORE
+========
 git add .
 git commit -m "test commit" 
 git push
 
+
+To RESTORE
+==========
+git log -n 2
+git reset --hard b5dd602a56e143fe4920782d2c80c29df8c4534c
+git clean -fd
 
 
