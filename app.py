@@ -1,18 +1,23 @@
 import os
 import subprocess
 import pickle
+import json
 
 import faiss
 import numpy as np
 import requests
-from flask import Flask, render_template, request, jsonify, Blueprint
+from flask import (
+    Flask,
+    render_template,
+    request,
+    jsonify,
+    Blueprint,
+    send_from_directory,
+)
 from sentence_transformers import SentenceTransformer
 
 # ----------------------------------------------------------------------------
-# Configure Flask:
-# - serve CSS/js/etc from 'static/' at '/static'
-# - serve templates from 'Templates/'
-# - serve PDFs from 'Source_Documents/' at '/Source_Documents'
+# Configure Flask
 # ----------------------------------------------------------------------------
 app = Flask(
     __name__,
@@ -21,7 +26,6 @@ app = Flask(
     static_url_path='/static'
 )
 
-# Blueprint to serve PDF files as a second "static" path
 pdf_bp = Blueprint(
     'pdf',
     __name__,
@@ -31,109 +35,134 @@ pdf_bp = Blueprint(
 app.register_blueprint(pdf_bp)
 
 # ----------------------------------------------------------------------------
-# Constants & Model Initialization
+# Globals & Model
 # ----------------------------------------------------------------------------
-OLLAMA_URL = "http://host.docker.internal:11434/api/generate"
+OLLAMA_URL   = "http://host.docker.internal:11434/api/generate"
 OLLAMA_MODEL = "llama3.2:latest"
-model = SentenceTransformer('all-MiniLM-L6-v2')
+model        = SentenceTransformer('all-MiniLM-L6-v2')
 
-# Index & Metadata placeholders
-index = None
+index    = None
 metadata = None
 
 # ----------------------------------------------------------------------------
-# Helper Functions
+# Helpers
 # ----------------------------------------------------------------------------
 def load_index():
     global index, metadata
-    # Load FAISS index
     index = faiss.read_index('chunk_index.faiss')
-    # Load metadata mapping each vector to (filename, chunk_idx, text)
     with open('chunk_metadata.pkl', 'rb') as f:
         metadata = pickle.load(f)
 
-
 def embed_text(text: str) -> np.ndarray:
-    """Embed a text string into a float32 vector."""
-    vec = model.encode(text)
-    return np.array(vec, dtype='float32')
-
+    return np.array(model.encode(text), dtype='float32')
 
 def query_ollama(prompt: str) -> str:
-    """Send a prompt to the local Ollama API and return the text response."""
-    payload = {
-        "model": OLLAMA_MODEL,
-        "prompt": prompt,
-        "stream": False
-    }
-    resp = requests.post(OLLAMA_URL, json=payload)
+    resp = requests.post(
+        OLLAMA_URL,
+        json={"model": OLLAMA_MODEL, "prompt": prompt, "stream": False}
+    )
     resp.raise_for_status()
     return resp.json().get('response', '').strip()
 
 # ----------------------------------------------------------------------------
-# Flask Routes
+# Routes
 # ----------------------------------------------------------------------------
 @app.route('/')
 def index_page():
-    """Render the main search UI."""
     return render_template('index.html')
 
+@app.route('/graph')
+def graph_viewer():
+    return send_from_directory(app.static_folder, 'graph.html')
+
+@app.route('/graph_data')
+def graph_data():
+    path = os.path.join(app.static_folder, 'graph.json')
+    with open(path, 'r') as f:
+        return jsonify(json.load(f))
 
 @app.route('/list_files', methods=['GET'])
 def list_files():
-    """Return a JSON list of all PDFs in Source_Documents/"""
-    source_folder = 'Source_Documents'
     try:
-        files = [f for f in os.listdir(source_folder) if f.lower().endswith('.pdf')]
+        files = [
+            f for f in os.listdir('Source_Documents')
+            if f.lower().endswith('.pdf')
+        ]
         return jsonify({"files": files})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
 @app.route('/reindex', methods=['POST'])
 def reindex():
-    """Rebuild the FAISS index by invoking build_index.py."""
     subprocess.run(['python', 'build_index.py'], check=True)
     load_index()
     return jsonify({"message": "Index rebuilt successfully."})
 
-
 @app.route('/search', methods=['POST'])
 def search():
-    """Handle a user query: retrieve top chunks, send context to Ollama, return answer."""
-    user_question = request.form.get('query', '')
-    if not user_question:
+    q = request.form.get('query', '').strip()
+    if not q:
         return jsonify({"answer": "Please provide a query."}), 400
 
-    # Embed and search
-    q_vec = embed_text(user_question)
-    distances, indices = index.search(np.expand_dims(q_vec, axis=0), k=5)
+    qv = embed_text(q)
+    D, I = index.search(np.expand_dims(qv, 0), k=5)
 
     snippets = []
-    for idx in indices[0]:
+    for idx in I[0]:
         if 0 <= idx < len(metadata):
-            fname, chunk_id, text = metadata[idx]
-            snippets.append(f"From {fname}, chunk {chunk_id}:\n{text.strip()}")
-    # something
+            fn, cid, txt = metadata[idx]
+            snippets.append(f"From {fn} (chunk {cid}):\n{txt.strip()}")
+
     if not snippets:
         return jsonify({"answer": "No relevant chunks found."})
 
     context = "\n\n".join(snippets)
-    prompt = f"""
-You are a helpful assistant. Use the following context to answer the question.
+    prompt = (
+        "You are a helpful assistant. Use the following context to answer the question.\n\n"
+        "Context:\n" + context + "\n\n"
+        "Question:\n" + q
+    )
 
-Context:
-{context}
-
-Question:
-{user_question}
-"""
     answer = query_ollama(prompt)
     return jsonify({"answer": answer})
 
+@app.route('/chunk/<int:node_id>')
+def get_chunk(node_id):
+    """Return the filename, chunk index, and text for a given node ID."""
+    if 0 <= node_id < len(metadata):
+        filename, chunk_idx, text = metadata[node_id]
+        return jsonify({
+            "filename": filename,
+            "chunk_idx": chunk_idx,
+            "text": text
+        })
+    else:
+        return jsonify({"error": "Invalid node id"}), 404
+
+@app.route('/topic_chunks/<int:topic_id>')
+def topic_chunks(topic_id):
+    """Return all chunks (with excerpts) for a given topic."""
+    # Load graph.json to find which nodes have this topic
+    graph_path = os.path.join(app.static_folder, 'graph.json')
+    with open(graph_path, 'r') as f:
+        graph = json.load(f)
+    ids = [node['id'] for node in graph['nodes'] if node['topic'] == topic_id]
+
+    result = []
+    for idx in ids:
+        fn, cid, txt = metadata[idx]
+        excerpt = txt.strip().replace('\n', ' ')[:300] + "…"
+        result.append({
+            "chunk_id":    idx,
+            "filename":    fn,
+            "chunk_index": cid,
+            "excerpt":     excerpt
+        })
+    return jsonify(result)
+
 # ----------------------------------------------------------------------------
-# Application Entry Point
+# Entry Point
 # ----------------------------------------------------------------------------
 if __name__ == '__main__':
     load_index()
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=5000, debug=True)

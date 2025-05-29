@@ -13,6 +13,7 @@ COPY . /app
 
 # Install required Python packages
 RUN pip install --no-cache-dir faiss-cpu pymupdf sentence-transformers flask requests
+RUN pip install gensim nltk
 
 # Expose port for Flask app (optional but good practice)
 EXPOSE 5000

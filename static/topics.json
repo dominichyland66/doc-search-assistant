@@ -1,0 +1,64 @@
+[
+  {
+    "id": 0,
+    "keywords": ["Saxon", "Limen", "tun", "village", "marshy"],
+    "description": "Early Saxon origins of Lymington, the founding settlement called Limen tun by the marshy river."
+  },
+  {
+    "id": 1,
+    "keywords": ["charter", "market", "fair", "William", "de Redvers"],
+    "description": "Medieval governance and commerce: charters granted by William de Redvers, weekly markets and annual fairs."
+  },
+  {
+    "id": 2,
+    "keywords": ["salt", "salterns", "evaporate", "copper", "seawater"],
+    "description": "Salt-making industry from medieval through 19th century: seawater evaporation and copper pan salterns."
+  },
+  {
+    "id": 3,
+    "keywords": ["port", "ships", "trade", "wine", "cloth"],
+    "description": "Maritime trade and port activity: import of wine, export of cloth, and provisioning ships for war."
+  },
+  {
+    "id": 4,
+    "keywords": ["war", "burned", "French", "1346", "rebellion"],
+    "description": "Conflict and warfare: French raids (1338, 1370, 1545), Hundred Years’ War, and Monmouth’s Rebellion."
+  },
+  {
+    "id": 5,
+    "keywords": ["industry", "railway", "gas", "water", "lighting"],
+    "description": "19th century infrastructure and new industries: boat-building, railway arrival, gas lighting, piped water."
+  },
+  {
+    "id": 6,
+    "keywords": ["population", "census", "club", "hospital", "museum"],
+    "description": "Demographics and civic life: population changes, founding of clubs, hospital opening, and museum."
+  },
+  {
+    "id": 7,
+    "keywords": ["duel", "Pennington", "Souper", "Dieterich", "Lymington"],
+    "description": "Pennington Duel of 1814: Souper and Dieterich’s fatal confrontation on Pennington Common."
+  },
+  {
+    "id": 8,
+    "keywords": ["Foreign", "Military", "Depot", "Legion", "Napoleonic"],
+    "description": "Foreign Military Depot: housing King’s German Legion and émigré regiments in Lymington during the Napoleonic Wars."
+  },
+  {
+    "id": 9,
+    "keywords": ["trial", "Winchester", "Assizes", "murder", "pardon"],
+    "description": "Souper’s trial and pardon: legal proceedings at Winchester Assizes for the duel-related death and subsequent clemency."
+  },
+  {
+    "id": 10,
+    "keywords": ["petition", "clemency", "Officers", "Residents", "Home Office"],
+    "description": "Campaign for clemency: petitions from military officers and Lymington residents advocating Souper’s pardon."
+  },
+  {
+    "id": 11,
+    "keywords": ["Souper", "service", "baptism", "Reinagle", "Bruges"],
+    "description": "William Henry Souper: biographical background, military service records, and family details."
+  }
+]
+
+  
