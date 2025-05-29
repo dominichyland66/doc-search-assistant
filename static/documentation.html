@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>LDA-Driven Semantic Graph Viewer</title>
+    <title>LDA-Driven Semantic Graph Viewer Documentation</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -148,14 +148,72 @@ Flask app.py ─ serves ─ graph.html ─ D3 & JSON ─▶ interactive visualiz
     </section>
 
     <section>
-        <h2>Customization & Extensions</h2>
+        <h2><code>build_index.py</code> — Index Builder Overview</h2>
+        <p>This script prepares the FAISS index by processing all PDFs in the <code>Source_Documents/</code> folder. It breaks each PDF into small text chunks, generates vector embeddings for each, and saves both the index and metadata.</p>
+
+        <h3>How It Works</h3>
+        <ol>
+            <li><strong>Setup</strong>
+                <ul>
+                    <li>Uses the <code>sentence-transformers</code> library (<code>all-MiniLM-L6-v2</code>) to embed text into 384-dimensional vectors.</li>
+                    <li>Uses FAISS (<code>IndexFlatL2</code>) to store these vectors for fast similarity search.</li>
+                </ul>
+            </li>
+            <li><strong>Extracting Text Chunks</strong>
+                <ul>
+                    <li>Opens each <code>.pdf</code> file using <code>PyMuPDF</code> (<code>fitz</code>).</li>
+                    <li>Reads all page text and slices it into chunks of <strong>500 characters</strong> (configurable).</li>
+                </ul>
+                <pre>chunks = [text[i:i+500] for i in range(0, len(text), 500)]</pre>
+            </li>
+            <li><strong>Embedding and Indexing</strong>
+                <ul>
+                    <li>For each chunk, generates an embedding.</li>
+                    <li>Adds the embedding to the FAISS index.</li>
+                </ul>
+                <pre>vec = embed_text(chunk)
+index.add(np.expand_dims(vec, axis=0))</pre>
+            </li>
+            <li><strong>Storing Metadata</strong>
+                <ul>
+                    <li>Records metadata alongside the index, storing:
+                        <ul>
+                            <li>File name</li>
+                            <li>Chunk index (order in file)</li>
+                            <li>Chunk text content</li>
+                        </ul>
+                    </li>
+                </ul>
+                <pre>metadata.append((file, i, chunk))</pre>
+            </li>
+            <li><strong>Saving Outputs</strong>
+                <ul>
+                    <li>Writes the FAISS index to <code>chunk_index.faiss</code>.</li>
+                    <li>Serializes the metadata list to <code>chunk_metadata.pkl</code> using <code>pickle</code>.</li>
+                </ul>
+                <pre>Saved index with [X] chunks.</pre>
+            </li>
+        </ol>
+
+        <h3>Script Usage</h3>
+        <pre>python build_index.py</pre>
+        <p><strong>Requirements:</strong></p>
         <ul>
-            <li><strong>Topics</strong>: Tweak <code>--num-topics</code> or edit <code>static/topics.json</code> to control themes.</li>
-            <li><strong>Chunk size</strong>: Adjust in <code>build_index.py</code> (default 500 chars).</li>
-            <li><strong>Nearest neighbors</strong>: Change <code>--k-neighbors</code> (default 5).</li>
-            <li><strong>Styling</strong>: Update <code>static/graph.html</code> CSS—for fonts, colors, labels.</li>
-            <li><strong>Additional metadata</strong>: Extend node payload with page numbers or section titles.</li>
-            <li><strong>Filtering UI</strong>: Add controls to hide/show topics or threshold edges by value.</li>
+            <li>PDFs in <code>Source_Documents/</code></li>
+            <li>Installed libraries: <code>faiss</code>, <code>PyMuPDF</code>, <code>sentence-transformers</code></li>
+        </ul>
+
+        <p><strong>Outputs:</strong></p>
+        <ul>
+            <li><code>chunk_index.faiss</code> → searchable index</li>
+            <li><code>chunk_metadata.pkl</code> → reference metadata for each chunk</li>
+        </ul>
+
+        <h3>Customisation</h3>
+        <ul>
+            <li><strong>Chunk size</strong>: Change the <code>chunk_size</code> parameter in <code>extract_chunks_from_pdf</code>.</li>
+            <li><strong>Embedding model</strong>: Replace <code>'all-MiniLM-L6-v2'</code> with any SentenceTransformer model you prefer.</li>
+            <li><strong>Index type</strong>: Use a different FAISS index type if needed (e.g., <code>IndexIVFFlat</code> for large-scale).</li>
         </ul>
     </section>
 

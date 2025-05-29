@@ -75,6 +75,10 @@ def index_page():
 def graph_viewer():
     return send_from_directory(app.static_folder, 'graph.html')
 
+@app.route('/documentation')
+def documentation_viewer():
+    return send_from_directory(app.static_folder, 'documentation.html')
+
 @app.route('/graph_data')
 def graph_data():
     path = os.path.join(app.static_folder, 'graph.json')
